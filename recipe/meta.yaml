@@ -1,12 +1,10 @@
 {% set name = "intel-pti" %}
-{% set version = "1.0.1" %}
+{% set version = "1.1.0" %}
 {% set version_pkg = version | replace("-", ".") %}
 {% set so_version = version.split('.')[0] %}
 {% set so_version_major = version.split('.')[0] %}
 
-{% set unitrace_version_match = load_file_regex(
-  load_file="tools/unitrace/src/version.h",
-  regex_pattern='#define\s+UNITRACE_VERSION\s+"(.+)"') %}
+{% set unitrace_version_match = load_file_regex(load_file="tools/unitrace/src/version.h", regex_pattern='#define\s+UNITRACE_VERSION\s+"(.+)"') %}
 {% set unitrace_version = unitrace_version_match[1] %}
 
 package:
@@ -15,7 +13,8 @@ package:
 
 source:
   url: https://github.com/intel/pti-gpu/archive/refs/tags/pti-{{ version }}.tar.gz
-  sha256: ca25b891e3121c59c0218371562418ff85d7ad776391a925057df4069549428d
+  sha256: d604473e70485043347591868cfc038f4b853cece5ec14554bd5a0eec7288891
+
 build:
   number: 0
   skip: true  # [osx]
@@ -30,7 +29,7 @@ requirements:
     - {{ compiler('cxx') }} # that is lilbstc++ for both rt and build
     - {{ stdlib('c') }} # glibc for build/rt
   host:
-    - level-zero-devel 1.28.*
+    - level-zero-devel 1.33.*
     - ocl-icd  # [linux]
     - khronos-opencl-icd-loader  # [not linux]
     # cpu runtime
@@ -45,8 +44,7 @@ requirements:
 
 outputs:
   - name: {{ name }}
-    script: install.sh  # [unix]
-    script: install.bat  # [win]
+    script: {{ "install.bat" if win else "install.sh" }}
     version: {{ version_pkg }}
     build:
       ignore_run_exports_from:
@@ -60,7 +58,7 @@ outputs:
         - {{ compiler('cxx') }}
         - {{ stdlib('c') }}
       host:
-        - level-zero-devel 1.28.*
+        - level-zero-devel 1.33.*
         - ocl-icd  # [linux]
         - khronos-opencl-icd-loader  # [not linux]
         # cpu runtime
@@ -91,11 +89,10 @@ outputs:
       dev_url: https://github.com/intel/pti-gpu
 
   - name: pti-gpu-unitrace
-    script: build.sh  # [unix]
-    script: bld.bat  # [win]
+    script: {{ "bld.bat" if win else "build.sh" }}
     version: {{ unitrace_version }}
     build:
-      number: 0
+      number: 1
       ignore_run_exports_from:
         - level-zero-devel
       # TODO: does unitrace work on windows?
@@ -110,7 +107,7 @@ outputs:
         - {{ compiler('dpcpp') }} >=2025.0.0
         - {{ stdlib('c') }}
       host:
-        - level-zero-devel 1.28.*
+        - level-zero-devel >=1.29,<1.32
         - ocl-icd  # [linux]
         - khronos-opencl-icd-loader  # [not linux]
         - llvm-openmp
